@@ -1,4 +1,4 @@
-## Database schema for Consunet application.
+## Database schema for Edutech application.
 
 ### Prerequisites
 
