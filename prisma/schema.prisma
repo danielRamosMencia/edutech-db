@@ -1,0 +1,361 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  name             String    @db.VarChar(255)
+  middle_name      String?   @db.VarChar(255)
+  last_name        String    @db.VarChar(255)
+  middle_last_name String?   @db.VarChar(255)
+  dni              String    @unique @db.VarChar(255)
+  rtn              String?   @unique @db.VarChar(255)
+  address          String?   @db.VarChar(511)
+  email            String?   @db.VarChar(255)
+  phone            String?   @db.VarChar(30)
+  birthdate        DateTime? @db.Date
+  active           Boolean   @default(true)
+
+  municipality_id String       @db.VarChar(32)
+  municipality    Municipality @relation(name: "employee_municipality", fields: [municipality_id], references: [id], onUpdate: Cascade)
+
+  institution_id String      @db.VarChar(32)
+  institution    Institution @relation(name: "employee_institution", fields: [institution_id], references: [id], onUpdate: Cascade)
+
+  portal_users PortalUser[] @relation(name: "portal_user_employee")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model PortalUser {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  username       String  @unique @db.VarChar(255)
+  code           String  @unique @db.VarChar(255)
+  active         Boolean @default(true)
+  email          String  @unique @db.VarChar(255)
+  password       String  @db.VarChar(255)
+  recovery_token String? @unique @db.VarChar(255)
+
+  employee_id String   @unique @db.VarChar(32)
+  employee    Employee @relation(name: "portal_user_employee", fields: [employee_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  role_id String? @db.VarChar(32)
+  role    Role?   @relation(name: "portal_user_role", fields: [role_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model Role {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  name   String  @db.VarChar(255)
+  code   String  @unique @db.VarChar(255)
+  active Boolean @default(true)
+
+  portal_users PortalUser[]      @relation(name: "portal_user_role")
+  permissions  RolePermissions[] @relation(name: "role_permissions")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model Permission {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  name   String  @db.VarChar(255)
+  code   String  @unique @db.VarChar(255)
+  active Boolean @default(true)
+
+  role RolePermissions[] @relation(name: "permissions_on_role")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+// intermediate table between roles and permissions
+model RolePermissions {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  role_id       String     @db.VarChar(32)
+  role          Role       @relation(name: "role_permissions", fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  permission_id String     @db.VarChar(32)
+  permission    Permission @relation(name: "permissions_on_role", fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  assigned_by String   @default("System") @db.VarChar(255)
+  assigned_at DateTime @default(now())
+
+  @@unique([role_id, permission_id])
+}
+
+model Institution {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  name          String  @db.VarChar(255)
+  code          String  @unique @db.VarChar(255)
+  active        Boolean @default(true)
+  rtn           String  @unique @db.VarChar(255)
+  address       String  @db.VarChar(255)
+  phone         String  @db.VarChar(30)
+  email         String  @db.VarChar(255)
+  contact_name  String? @db.VarChar(30)
+  contact_phone String? @db.VarChar(30)
+  contact_email String? @db.VarChar(255)
+
+  municipality_id String       @db.VarChar(32)
+  municipality    Municipality @relation(name: "institution_municipality", fields: [municipality_id], references: [id], onUpdate: Cascade)
+
+  district_id String   @db.VarChar(32)
+  district    District @relation(name: "institution_district", fields: [district_id], references: [id], onUpdate: Cascade)
+
+  employees Employee[] @relation(name: "employee_institution")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model Student {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  name             String    @db.VarChar(255)
+  middle_name      String?   @db.VarChar(255)
+  last_name        String    @db.VarChar(255)
+  middle_last_name String?   @db.VarChar(255)
+  dni              String    @unique @db.VarChar(255)
+  code             String    @unique @db.VarChar(255)
+  active           Boolean   @default(true)
+  address          String?   @db.VarChar(511)
+  email            String?   @db.VarChar(255)
+  phone            String?   @db.VarChar(30)
+  birthdate        DateTime?
+  picture_src      String?   @default("uploads/") @db.Text
+
+  municipality_id String       @db.VarChar(32)
+  municipality    Municipality @relation(name: "student_municipality", fields: [municipality_id], references: [id], onUpdate: Cascade)
+
+  tutor_id String? @unique @db.VarChar(32)
+  tutor    Tutor?  @relation(name: "student_tutor", fields: [tutor_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  grade_id String? @db.VarChar(32)
+  grade    Grade?  @relation(name: "student_grade", fields: [grade_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  registrations StudentRegistrations[] @relation(name: "student_registrations")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model Tutor {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  name             String  @db.VarChar(255)
+  middle_name      String? @db.VarChar(255)
+  last_name        String  @db.VarChar(255)
+  middle_last_name String? @db.VarChar(255)
+  dni              String  @unique @db.VarChar(255)
+  active           Boolean @default(true)
+  address          String? @db.VarChar(255)
+  phone            String  @db.VarChar(30)
+  email            String  @db.VarChar(255)
+  workplace        String? @db.VarChar(255)
+
+  municipality_id String       @db.VarChar(32)
+  municipality    Municipality @relation(name: "tutor_municipality", fields: [municipality_id], references: [id], onUpdate: Cascade)
+
+  students Student[] @relation(name: "student_tutor")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model Registration {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  value   Decimal @db.Decimal(10, 2)
+  code    String  @unique @db.VarChar(255)
+  comment String? @db.VarChar(255)
+
+  registration_status_id String             @db.VarChar(32)
+  registration_status    RegistrationStatus @relation(name: "registration_status", fields: [registration_status_id], references: [id], onUpdate: Cascade)
+
+  student StudentRegistrations[] @relation(name: "registration_student")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+// Intermediate table between students and registrations
+model StudentRegistrations {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  student_id String  @db.VarChar(32)
+  student    Student @relation(name: "student_registrations", fields: [student_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  registration_id String       @db.VarChar(32)
+  registration    Registration @relation(name: "registration_student", fields: [registration_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  assigned_by String   @default("System") @db.VarChar(255)
+  assigned_at DateTime @default(now())
+
+  @@unique([student_id, registration_id])
+}
+
+// Catalogues -------------------------------------------------------------------------------------------
+model Country {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  name   String  @db.VarChar(255)
+  active Boolean @default(true)
+  // iso 3166-1 fields
+  A2     String  @unique @db.VarChar(16)
+  A3     String  @unique @db.VarChar(16)
+  code   String  @unique @db.VarChar(16)
+
+  departments Department[] @relation(name: "department_country")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model Department {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  name   String  @db.VarChar(255)
+  code   String  @unique @db.VarChar(255)
+  active Boolean @default(true)
+
+  country_id String  @db.VarChar(32)
+  country    Country @relation(name: "department_country", fields: [country_id], references: [id], onUpdate: Cascade)
+
+  municipalities Municipality[] @relation(name: "municipality_department")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model Municipality {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  name   String  @db.VarChar(255)
+  code   String  @unique @db.VarChar(255)
+  active Boolean @default(true)
+
+  department_id String     @db.VarChar(32)
+  department    Department @relation(name: "municipality_department", fields: [department_id], references: [id], onUpdate: Cascade)
+
+  employees    Employee[]    @relation(name: "employee_municipality")
+  institutions Institution[] @relation(name: "institution_municipality")
+  students     Student[]     @relation(name: "student_municipality")
+  tutors       Tutor[]       @relation(name: "tutor_municipality")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model District {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  name   String  @db.VarChar(255)
+  code   String  @unique @db.VarChar(255)
+  active Boolean @default(true)
+
+  institutions Institution[] @relation(name: "institution_district")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model Grade {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  name         String  @db.VarChar(255)
+  code         String  @unique @db.VarChar(255)
+  active       Boolean @default(true)
+  grade_number Int     @default(0)
+
+  signatures GradeSignatures[] @relation(name: "grade_signatures")
+  students   Student[]         @relation(name: "student_grade")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model Signature {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  name   String  @db.VarChar(255)
+  code   String  @unique @db.VarChar(255)
+  active Boolean @default(true)
+
+  grade GradeSignatures[] @relation(name: "signature_grade")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+// intermediate table between signatures and grades
+model GradeSignatures {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  grade_id String @db.VarChar(32)
+  grade    Grade  @relation(name: "grade_signatures", fields: [grade_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  signature_id String    @db.VarChar(32)
+  signature    Signature @relation(name: "signature_grade", fields: [signature_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  assigned_by String   @default("System") @db.VarChar(255)
+  assigned_at DateTime @default(now())
+
+  @@unique([signature_id, grade_id])
+}
+
+model RegistrationStatus {
+  id String @id @default(cuid()) @db.VarChar(32)
+
+  name   String  @db.VarChar(255)
+  code   String  @unique @db.VarChar(255)
+  active Boolean @default(true)
+
+  registrations Registration[] @relation(name: "registration_status")
+
+  created_by  String   @default("System") @db.VarChar(255)
+  modified_by String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
