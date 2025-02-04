@@ -3,7 +3,6 @@ import { randIndex } from "./utils/rand-index";
 
 export const gradeSignaturesSeed = async (prisma: PrismaClient) => {
   try {
-    // this signatures are randomized, so some signatures will no make much sense in real life
     await prisma.$transaction(async (trx) => {
       const grades = await trx.grade.findMany();
       const signatures = await trx.signature.findMany();
@@ -11,13 +10,14 @@ export const gradeSignaturesSeed = async (prisma: PrismaClient) => {
       const gradeSignatures: GradeSignaturesSeeder[] = [];
 
       grades.forEach((grade) => {
-        const idx = randIndex(0, signatures.length - 1);
-        const signature = signatures[idx];
-
-        gradeSignatures.push({
-          grade_id: grade.id,
-          signature_id: signature.id,
-        });
+        // signatures are randomized, so some signatures will no make much sense in real life according to the grades
+        const amount = randIndex(10, signatures.length - 1);
+        for (let i = 0; i < amount; i++) {
+          gradeSignatures.push({
+            grade_id: grade.id,
+            signature_id: signatures[i].id,
+          });
+        }
       });
 
       await trx.gradeSignatures.createMany({
